@@ -104,4 +104,16 @@ public class EmployeeController {
         employeeService.startOrstop(status,id);
         return Result.success();
     }
+    @GetMapping("/{id}")
+    public Result<Employee> selectEmpById(@PathVariable Long id){
+        log.info("查询员工id:{}",id);
+        Employee employee = employeeService.selectEmpById(id);
+        return Result.success(employee);
+    }
+    @PutMapping
+    public Result updateEmp(@RequestBody Employee employee){
+        log.info("修改员工信息，{}",employee);
+        employeeService.updateEmp(employee);
+        return Result.success();
+    }
 }

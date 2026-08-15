@@ -1,5 +1,6 @@
 package com.sky.service.impl;
 
+import com.fasterxml.jackson.databind.ser.Serializers;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.sky.constant.MessageConstant;
@@ -95,6 +96,22 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .status(status)
                 .id(id)
                 .build();
+        employeeMapper.update(employee);
+    }
+    @Override
+    public Employee selectEmpById(Long id){
+        Employee employee = employeeMapper.selectEmpById(id);
+        employee.setPassword("****");
+        return employee;
+    }
+    @Override
+    public void updateEmp(Employee employee){
+        employee.setUpdateTime(LocalDateTime.now());
+        try{
+            employee.setUpdateUser(BaseContext.getCurrentId());
+        }finally {
+            BaseContext.removeCurrentId();
+        }
         employeeMapper.update(employee);
     }
 }
