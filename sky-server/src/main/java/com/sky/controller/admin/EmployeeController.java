@@ -105,12 +105,14 @@ public class EmployeeController {
         return Result.success();
     }
     @GetMapping("/{id}")
+    @ApiOperation("查询员工信息")
     public Result<Employee> selectEmpById(@PathVariable Long id){
         log.info("查询员工id:{}",id);
         Employee employee = employeeService.selectEmpById(id);
         return Result.success(employee);
     }
     @PutMapping
+    @ApiOperation("修改员工信息")
     public Result updateEmp(@RequestBody Employee employee){
         log.info("修改员工信息，{}",employee);
         employeeService.updateEmp(employee);
