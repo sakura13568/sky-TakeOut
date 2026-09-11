@@ -9,18 +9,19 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ShopServiceImpl implements ShopService {
+    private static final String key = "SHOP_STATUS";
     @Autowired
     private RedisTemplate<Object,Object> redisTemplate;
     @Override
     //TODO尝试将stringOperations提取出来
     public void setShopStatus(Integer status){
         ValueOperations<Object, Object> stringOperations = redisTemplate.opsForValue();
-        stringOperations.set("SHOP_STATUS",String.valueOf(status));
+        stringOperations.set(key,String.valueOf(status));
     }
     @Override
     public Integer getShopStatus(){
         ValueOperations<Object,Object> stingOperations = redisTemplate.opsForValue();
-        String shopStatus = (String)stingOperations.get("SHOP_STATUS");
+        String shopStatus = (String)stingOperations.get(key);
         //todo弄懂assert作用
         assert shopStatus != null;
         Integer status = Integer.parseInt(shopStatus);
