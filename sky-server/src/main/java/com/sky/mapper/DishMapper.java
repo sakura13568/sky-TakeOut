@@ -8,6 +8,7 @@ import com.sky.enumeration.OperationType;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 
@@ -49,4 +50,14 @@ public interface DishMapper {
     @Select("select * from dish where category_id = #{categoryId} and status = #{status}")
     List<Dish> list(@Param ("categoryId") Long categoryId,@Param("status") Integer status);
 
+
+    /**
+     * 根据套餐id查询菜品
+     * @param setmealId
+     * @return
+     */
+    @Select("select a.* from dish a left join setmeal_dish b on a.id = b.dish_id where b.setmeal_id = #{setmealId}")
+    List<Dish> getBySetmealId(Long setmealId);
+
+    List<Dish> selectDishItemsByCategroyId(Dish dish);
 }

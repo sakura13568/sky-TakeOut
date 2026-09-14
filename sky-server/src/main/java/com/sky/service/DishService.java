@@ -21,6 +21,12 @@ public interface DishService {
      * @return
      */
     PageResult pageSearch(DishPageQueryDTO dishPageQueryDTO);
+    /**
+     * 根据分类id查询菜品
+     * @param categoryId
+     * @return
+     */
+    List<Dish>  selectDishItemsByCategroyId(Long categoryId);
 
     /**
      * 再删除的同时要判断被删除的菜品是否处于停售状态同时是否在套餐当中
@@ -42,4 +48,6 @@ public interface DishService {
      * @return
      */
     List<DishVO> listWithFlavor(Dish dish);
+
+    void setStatus(Long id, Integer status);
 }
