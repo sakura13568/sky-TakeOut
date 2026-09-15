@@ -23,6 +23,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -82,7 +83,10 @@ public class SetmealServiceImpl implements SetmealService {
      * @param ids
      */
     @Transactional
-    @CacheEvict(cacheNames = "setMealCache", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "setMealCache", allEntries = true),
+            @CacheEvict(cacheNames = "DishInSetMealCache", allEntries = true)
+    })
     public void deleteBatch(List<Long> ids) {
         ids.forEach(id -> {
             Setmeal setmeal = setmealMapper.getById(id);
@@ -122,7 +126,10 @@ public class SetmealServiceImpl implements SetmealService {
      * @param setmealDTO
      */
     @Transactional
-    @CacheEvict(cacheNames = "setMealCache", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "setMealCache", allEntries = true),
+            @CacheEvict(cacheNames = "DishInSetMealCache", key = "#setmealDTO.id")
+    })
     public void update(SetmealDTO setmealDTO) {
         Setmeal setmeal = new Setmeal();
         BeanUtils.copyProperties(setmealDTO, setmeal);

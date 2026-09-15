@@ -16,5 +16,7 @@ public interface ShoppingCartMapper {
     @Select("select * from shopping_cart where user_id = #{userId}")
      List<ShoppingCart> getShoppingCartByUserId(Long userId);
     @Delete("delete from shopping_cart where user_id = #{userId}")
-    void deleteShopppingCartsByUserId(Long userId);
+    void deleteShoppingCartsByUserId(Long userId);
+    @Delete("delete from shopping_cart where id = #{id}")
+    void deleteShoppingCart(ShoppingCart userShoppingCart);
 }

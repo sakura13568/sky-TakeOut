@@ -63,14 +63,31 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         }
     }
     @Override
+    public void subShoppingCarts(ShoppingCartDTO shoppingCartDTO) {
+        ShoppingCart shoppingCart = new ShoppingCart();
+        BeanUtils.copyProperties(shoppingCartDTO,shoppingCart);
+        Long userId = BaseContext.getCurrentId();
+        shoppingCart.setUserId(userId);
+        List<ShoppingCart> shoppingCarts = shoppingCartMapper.selectShoppingCartList(shoppingCart);
+        if(shoppingCarts == null || shoppingCarts.isEmpty()){
+                  throw new RuntimeException("购物车中没有该商品");
+        }
+            ShoppingCart userShoppingCart = shoppingCarts.get(0);
+            if(userShoppingCart.getNumber() <= 1){
+                shoppingCartMapper.deleteShoppingCart(userShoppingCart);
+            }
+            userShoppingCart.setNumber(userShoppingCart.getNumber() - 1);
+            shoppingCartMapper.updateNumberById(userShoppingCart);
+    }
+    @Override
     public List<ShoppingCart> getShoppingCart(){
         Long userId = BaseContext.getCurrentId();
         List<ShoppingCart> shoppingCarts = shoppingCartMapper.getShoppingCartByUserId(userId);
         return shoppingCarts;
     }
     @Override
-    public void deleteShoppingCarts(){
+    public void deleteAllShoppingCarts(){
         Long userId = BaseContext.getCurrentId();
-        shoppingCartMapper.deleteShopppingCartsByUserId(userId);
+        shoppingCartMapper.deleteShoppingCartsByUserId(userId);
     }
 }

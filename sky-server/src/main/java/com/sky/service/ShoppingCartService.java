@@ -17,5 +17,7 @@ public interface ShoppingCartService {
     /**
      * 通过user_id删除购物车中的信息
      */
-    void deleteShoppingCarts();
+    void deleteAllShoppingCarts();
+
+    void subShoppingCarts(ShoppingCartDTO shoppingCartDTO);
 }

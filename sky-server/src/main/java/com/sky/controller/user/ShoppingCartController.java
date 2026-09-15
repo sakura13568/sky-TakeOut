@@ -31,7 +31,12 @@ public class ShoppingCartController {
     }
     @DeleteMapping("/clean")
     public Result cleanShoppingCart(){
-         shoppingCartService.deleteShoppingCarts();
+         shoppingCartService.deleteAllShoppingCarts();
+         return Result.success();
+    }
+    @PostMapping("/sub")
+    public Result subShoppingCart(@RequestBody ShoppingCartDTO shoppingCartDTO){
+         shoppingCartService.subShoppingCarts(shoppingCartDTO);
          return Result.success();
     }
 }
