@@ -22,5 +22,8 @@ public class JwtProperties {
     private String userSecretKey;
     private long userTtl;
     private String userTokenName;
-
+    /**
+     * 测试的时候是否跳过jwt令牌验证
+     */
+    private Boolean skip;
 }

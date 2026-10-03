@@ -19,4 +19,5 @@ public interface ShoppingCartMapper {
     void deleteShoppingCartsByUserId(Long userId);
     @Delete("delete from shopping_cart where id = #{id}")
     void deleteShoppingCart(ShoppingCart userShoppingCart);
+    void insertShoppingCartsBatch(List<ShoppingCart> shoppingCarts);
 }

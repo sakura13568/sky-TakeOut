@@ -44,6 +44,14 @@ sky:
     user-secret-key: sakura
     user-ttl: 7200000
     user-token-name: authentication
+    skip: false
   wechat:
     secret: ${sky.wechat.secret}
     appid: ${sky.wechat.appid}
+    notifyUrl: ${sky.wechat.notifyUrl}
+  shop:
+    address: 河南省三门峡市陕州区
+  baidu:
+    ak: EbTZDTSIKYk01WoFvBvO61VLnN4UjWTL
+
+
