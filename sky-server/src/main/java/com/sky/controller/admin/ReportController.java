@@ -13,8 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletResponse;
 import java.time.LocalDate;
 
 
@@ -55,5 +57,13 @@ public class ReportController {
                                                      @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end){
        log.info("统计{}-{}时间段内销量top10的菜品或套餐", begin, end);
        return Result.success(reportService.getTop10Statistics(begin,end));
+   }
+   @GetMapping("/export")
+   @ApiOperation("导出运营数据报表")
+    public void export(HttpServletResponse response,
+                       @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) @RequestParam(required = false) LocalDate begin,
+                       @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) @RequestParam(required = false) LocalDate end){
+        log.info("导出{}-{}时间段内的运营数据报表", begin, end);
+        reportService.export(response, begin, end);
    }
 }
