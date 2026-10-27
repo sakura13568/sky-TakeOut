@@ -81,4 +81,6 @@ public interface SetmealMapper {
      * @return
      */
     Integer countByMap(Map map);
+
+    List<Long> listCategoryIdsByIds(List<Long> setmealIds);
 }

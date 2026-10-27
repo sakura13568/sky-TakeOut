@@ -17,7 +17,6 @@ public class ShopController {
     private ShopService shopService;
     @ApiOperation("查询店铺营业状态")
     @GetMapping("/status")
-    //todo user端数据课admin端关于店铺状态的转换不能实时同步
     public Result<Integer> getStatus(){
         Integer status = shopService.getShopStatus();
         return Result.success(status);

@@ -2,6 +2,7 @@ package com.sky.service.impl;
 
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
+import com.sky.constant.CacheConstants;
 import com.sky.constant.MessageConstant;
 import com.sky.constant.StatusConstant;
 import com.sky.context.BaseContext;
@@ -18,18 +19,18 @@ import com.sky.mapper.SetmealDishMapper;
 import com.sky.mapper.SetmealMapper;
 import com.sky.result.PageResult;
 import com.sky.service.DishService;
+import com.sky.utils.CacheClient;
 import com.sky.vo.DishVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -43,8 +44,7 @@ public class DishServiceImpl implements DishService {
     @Autowired
     private SetmealMapper setmealMapper;
     @Autowired
-    //todo 弄懂为什么redis中string类型可以放java中的list类型
-    private RedisTemplate redisTemplate;
+    private CacheClient cacheClient;
 
     @Override
     @Transactional
@@ -59,7 +59,8 @@ public class DishServiceImpl implements DishService {
         }
         dishFlavorMapper.addDishFlavorBatch(flavors);
 
-        cleanDishCache(Collections.singletonList(dishDTO.getCategoryId()));
+        cleanDishCategoryCache(Collections.singletonList(dish.getCategoryId())) ;
+        cleanSetmealDishCache(Collections.singletonList(id));
     }
 
     @Override
@@ -95,7 +96,8 @@ public class DishServiceImpl implements DishService {
         }
         dishMapper.deleteDishBatch(ids);
         dishFlavorMapper.deleteByDishIds(ids);
-        cleanDishCache(categoryIds);
+        cleanDishCategoryCache(categoryIds) ;
+        cleanSetmealDishCache(ids);
     }
 
     @Override
@@ -110,7 +112,6 @@ public class DishServiceImpl implements DishService {
 
     @Override
     @Transactional
-    @CacheEvict(cacheNames = "DishInSetMealCache", allEntries = true)
     public void updateWithFlavors(DishDTO dishDTO) {
         Dish oldDish = dishMapper.getById(dishDTO.getId());
         Long oldCategoryId = oldDish == null ? null : oldDish.getCategoryId();
@@ -130,12 +131,12 @@ public class DishServiceImpl implements DishService {
         List<Long> categoryIds = new ArrayList<>();
         categoryIds.add(oldCategoryId);
         categoryIds.add(dishDTO.getCategoryId());
-        cleanDishCache(categoryIds);
+        cleanDishCategoryCache(categoryIds);
+        cleanSetmealDishCache(ids);
     }
 
     @Override
     @Transactional
-    @CacheEvict(cacheNames = "setMealCache", allEntries = true)
     public void setStatus(Long id, Integer status) {
         Dish dish = Dish.builder()
                 .id(id)
@@ -145,15 +146,15 @@ public class DishServiceImpl implements DishService {
 
         Dish currentDish = dishMapper.getById(id);
         if (currentDish != null) {
-            cleanDishCache(Collections.singletonList(currentDish.getCategoryId()));
+             cleanDishCategoryCache(Collections.singletonList(currentDish.getCategoryId()));
         }
 
-        if (status == StatusConstant.DISABLE) {
+        if (Objects.equals(status, StatusConstant.DISABLE)) {
             // 如果是停售操作，还需要将包含当前菜品的套餐也停售
             List<Long> dishIds = new ArrayList<>();
             dishIds.add(id);
             List<Long> setmealIds = setmealDishMapper.selectSetmealByDishId(dishIds);
-            if (setmealIds != null && setmealIds.size() > 0) {
+            if (setmealIds != null && !setmealIds.isEmpty()) {
                 for (Long setmealId : setmealIds) {
                     Setmeal setmeal = Setmeal.builder()
                             .id(setmealId)
@@ -162,6 +163,7 @@ public class DishServiceImpl implements DishService {
                     setmealMapper.update(setmeal);
                 }
             }
+            cleanSetmealListCache(setmealIds);
         }
     }
 
@@ -172,11 +174,16 @@ public class DishServiceImpl implements DishService {
      * @return
      */
     public List<DishVO> listWithFlavor(Dish dish) {
-        String key = "dish_" + dish.getCategoryId();
-        List<DishVO> dishVOList = (List<DishVO>) redisTemplate.opsForValue().get(key);
-        if (dishVOList != null && !dishVOList.isEmpty()) {
-            return dishVOList;
-        }
+        String key = CacheConstants.DISH_LIST + dish.getCategoryId() + ":" +  dish.getStatus();
+        return cacheClient.queryListWithMutex(key,
+                DishVO.class,
+                () -> loadDishFromDB(dish),
+                CacheConstants.TTL_SHORT);
+
+    }
+    private List<DishVO> loadDishFromDB(Dish dish) {
+        List<DishVO> dishVOList = new ArrayList<>();
+
         List<Dish> dishList = dishMapper.list(dish.getCategoryId(), dish.getStatus());
 
         dishVOList = new ArrayList<>();
@@ -191,15 +198,43 @@ public class DishServiceImpl implements DishService {
             dishVO.setFlavors(flavors);
             dishVOList.add(dishVO);
         }
-        redisTemplate.opsForValue().set(key, dishVOList);
-        return dishVOList;
+        return  dishVOList;
     }
 
-    private void cleanDishCache(List<Long> categoryIds) {
+    private void cleanDishCategoryCache(List<Long> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return;
         }
-        categoryIds.stream().filter(id -> id != null).distinct()
-                .forEach(id -> redisTemplate.delete("dish_" + id));
+        categoryIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .forEach(categoryId -> {
+                    cacheClient.delCache(CacheConstants.DISH_LIST + categoryId + ":1");
+                    cacheClient.delCache(CacheConstants.DISH_LIST + categoryId + ":0");
+                });
+    }
+    public void cleanSetmealDishCache(List<Long> dishIds){
+        if (dishIds == null || dishIds.isEmpty()) {
+            return;
+        }
+        List<Long> setMealIds = setmealDishMapper.selectSetmealByDishId(dishIds);
+        if (setMealIds == null || setMealIds.isEmpty()) {
+            return;
+        }
+        setMealIds.forEach(setMealId -> {
+            cacheClient.delCache(CacheConstants.SETMEAL_DISH + setMealId);
+        });
+    }
+    private void cleanSetmealListCache(List<Long> setmealIds) {
+        if (setmealIds == null || setmealIds.isEmpty()) {
+            return;
+        }
+        // 批量查出这些套餐的 categoryId（新增一个 mapper 方法，避免 N 次 getById）
+        List<Long> categoryIds = setmealMapper.listCategoryIdsByIds(setmealIds);
+        categoryIds.stream().filter(Objects::nonNull).distinct()
+                .forEach(categoryId -> {
+                    cacheClient.delCache(CacheConstants.SETMEAL_LIST + categoryId + ":1");
+                    cacheClient.delCache(CacheConstants.SETMEAL_LIST + categoryId + ":0");
+                });
     }
 }

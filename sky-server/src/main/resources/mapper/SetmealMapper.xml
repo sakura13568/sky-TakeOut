@@ -85,4 +85,10 @@
             </if>
         </where>
     </select>
+    <select id="listCategoryIdsByIds" resultType="java.lang.Long">
+        select category_id from setmeal where id in 
+        <foreach collection="setmealIds" item="id" separator="," close=")" open="(">
+            #{id}
+        </foreach>
+    </select>
 </mapper>

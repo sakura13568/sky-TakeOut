@@ -2,6 +2,7 @@ package com.sky.service.impl;
 
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
+import com.sky.constant.CacheConstants;
 import com.sky.constant.MessageConstant;
 import com.sky.constant.StatusConstant;
 import com.sky.context.BaseContext;
@@ -14,6 +15,7 @@ import com.sky.mapper.DishMapper;
 import com.sky.mapper.SetmealMapper;
 import com.sky.result.PageResult;
 import com.sky.service.CategoryService;
+import com.sky.utils.CacheClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +36,8 @@ public class CategoryServiceImpl implements CategoryService {
     private DishMapper dishMapper;
     @Autowired
     private SetmealMapper setmealMapper;
+    @Autowired
+    private CacheClient cacheClient;
 
     /**
      * 新增分类
@@ -49,6 +53,8 @@ public class CategoryServiceImpl implements CategoryService {
 
 
         categoryMapper.insert(category);
+        cacheClient.delCache(CacheConstants.CATEGORY_LIST + "1");
+        cacheClient.delCache(CacheConstants.CATEGORY_LIST + "2");
     }
 
     /**
@@ -84,6 +90,8 @@ public class CategoryServiceImpl implements CategoryService {
 
         //删除分类数据
         categoryMapper.deleteById(id);
+        cacheClient.delCache(CacheConstants.CATEGORY_LIST + "1");
+        cacheClient.delCache(CacheConstants.CATEGORY_LIST + "2");
     }
 
     /**
@@ -94,6 +102,8 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = new Category();
         BeanUtils.copyProperties(categoryDTO,category);
         categoryMapper.update(category);
+        cacheClient.delCache(CacheConstants.CATEGORY_LIST + "1");
+        cacheClient.delCache(CacheConstants.CATEGORY_LIST + "2");
     }
 
     /**
@@ -109,6 +119,8 @@ public class CategoryServiceImpl implements CategoryService {
                 .updateUser(BaseContext.getCurrentId())
                 .build();
         categoryMapper.update(category);
+        cacheClient.delCache(CacheConstants.CATEGORY_LIST + "1");
+        cacheClient.delCache(CacheConstants.CATEGORY_LIST + "2");
     }
 
     /**
@@ -117,6 +129,11 @@ public class CategoryServiceImpl implements CategoryService {
      * @return
      */
     public List<Category> list(Integer type) {
-        return categoryMapper.list(type);
+        String key = CacheConstants.CATEGORY_LIST + type;
+        return cacheClient.queryWithPassThrough(key,
+                type,
+                Category.class,
+                categoryMapper::list,
+                CacheConstants.TTL_MEDIUM);
     }
 }
